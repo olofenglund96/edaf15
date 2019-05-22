@@ -1,0 +1,1 @@
+(a == 1933/42 && b == 677/42) || (a > 1933/42 && Inequality[(7 + 3*a)/9, LessEqual, b, LessEqual, (-116 + 47*a)/127])

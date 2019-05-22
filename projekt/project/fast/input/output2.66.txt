@@ -1,0 +1,1 @@
+(a == -3375/2672 && b == 4503/5344) || (Inequality[-3375/2672, Less, a, LessEqual, -223/526] && Inequality[(-21 - 78*a)/92, LessEqual, b, LessEqual, (51 - 25*a)/98]) || (Inequality[-223/526, Less, a, Less, 940/1117] && Inequality[(11 + 8*a)/58, LessEqual, b, LessEqual, (51 - 25*a)/98]) || (a == 940/1117 && b == 683/2234)

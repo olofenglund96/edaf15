@@ -1,0 +1,1 @@
+Element[a | b, Reals] && c <= (108 - 8*a - 30*b)/61

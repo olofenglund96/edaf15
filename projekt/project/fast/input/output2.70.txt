@@ -1,0 +1,1 @@
+(a <= -1452/205 && Inequality[(60 + 53*a)/108, LessEqual, b, LessEqual, (68 - 30*a)/23]) || (Inequality[-1452/205, Less, a, Less, -204/605] && Inequality[(60 + 53*a)/108, LessEqual, b, LessEqual, (-4 - 35*a)/20]) || (a == -204/605 && b == 236/605)

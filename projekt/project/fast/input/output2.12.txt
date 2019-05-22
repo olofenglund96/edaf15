@@ -1,0 +1,1 @@
+Element[a, Reals] && b >= (-45 - 22*a)/52

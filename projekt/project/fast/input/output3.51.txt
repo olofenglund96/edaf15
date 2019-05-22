@@ -1,0 +1,1 @@
+Element[a, Reals] && ((b < (1140 - 2421*a)/226 && Inequality[(4 + 3*a + 22*b)/56, LessEqual, c, LessEqual, (48 - 81*a + 32*b)/102]) || (b == (1140 - 2421*a)/226 && c == (48 - 81*a + 32*b)/102))

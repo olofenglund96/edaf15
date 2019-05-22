@@ -1,0 +1,1 @@
+(a <= -6177/4390 && Inequality[(-55 + 83*a)/27, LessEqual, b, LessEqual, (-3 + 80*a)/90]) || (Inequality[-6177/4390, Less, a, Less, 3611/7276] && Inequality[(-55 + 83*a)/27, LessEqual, b, LessEqual, (-72 + 41*a)/101]) || (a == 3611/7276 && b == -3721/7276)

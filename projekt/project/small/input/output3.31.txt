@@ -1,0 +1,1 @@
+Element[a, Reals] && ((b == (164 + 21*a)/32 && c == (113 + 127*a - 9*b)/98) || (b > (164 + 21*a)/32 && Inequality[(113 + 127*a - 9*b)/98, LessEqual, c, LessEqual, (-51 + 106*a + 23*b)/98]))

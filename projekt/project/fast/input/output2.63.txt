@@ -1,0 +1,1 @@
+(a == 1387/4588 && b == 2379/4588) || (Inequality[1387/4588, Less, a, LessEqual, 329/1011] && Inequality[(47 - 80*a)/44, LessEqual, b, LessEqual, (8 + 37*a)/37]) || (Inequality[329/1011, Less, a, Less, 224/481] && Inequality[(41*a)/28, LessEqual, b, LessEqual, (8 + 37*a)/37]) || (a == 224/481 && b == 328/481)

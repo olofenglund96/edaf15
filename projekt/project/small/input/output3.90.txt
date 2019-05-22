@@ -1,0 +1,1 @@
+Element[a | b, Reals] && c >= (-15 + 120*a - 14*b)/24

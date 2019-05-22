@@ -1,0 +1,1 @@
+Element[a | b, Reals] && c <= (-2 - 48*a + 74*b)/19

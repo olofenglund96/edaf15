@@ -1,0 +1,1 @@
+Element[a, Reals] && b <= (119 - 27*a)/27

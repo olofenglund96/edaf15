@@ -1,0 +1,1 @@
+Element[a, Reals] && b >= (-96 - 75*a)/10
