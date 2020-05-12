@@ -1,0 +1,13 @@
+7 Intadd runs every 3 cycles
+
+11 Floatadd runs every 5 cycles
+
+12 Yes, since the processor is superscalar, starts multiple instructions every cycle?
+
+13 The processor predicts that the program needs to do the computation and starts it before the signal is sent from the program.
+
+14 The fadds cannot run without register renaming? The original value is copied and used since the other value is altered?
+
+15 Floatsum: the program needs to wait for the statement to be evaluated before writing to s. Is blocked as can be seen by the red a's.
+
+16 The execution time lasts only one clock cycle for xor while it lasts 4 for summation. Bit-wise operations are generally fast?
