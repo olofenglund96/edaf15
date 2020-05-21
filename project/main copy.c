@@ -21,7 +21,7 @@ typedef struct simplex_t {
     float y;
 } sx_t;
 
-float xsimplex(int m, int n, double **a, double *b, double *c, double *x, float y, int *var, int h);
+float xsimplex(sx_t *s, double *x, int h);
 
 void parse_input(char buffer[], sx_t *s)
 {
@@ -99,7 +99,6 @@ void print_problem(sx_t *s)
     for(int i = 0; i < s->n-1; i++)
         printf("%.3lf x%d + ", s->c[i], s->var[i]);
     printf("%.3lf x%d\n", s->c[s->n-1], s->n-1);
-    printf("y = %f\n", s->y);
     
     for(int i = 0; i < s->m; i++)
     {
@@ -124,32 +123,23 @@ void free_vars(sx_t *s)
     free(s->a);
 }
 
-int init(sx_t *s, int m,  int n, double **a, double *b, double *c, double *x, float y, int *var)
+int init(sx_t *s)
 {
-    s->m = m;
-    s->n = n;
-    s->a = a;
-    s->b = b;
-    s->c = c;
-    s->x = x;
-    s->y = y;
-    s->var = var;
-
     if(s->var == NULL)
     {
-        s->var = (int *)malloc(sizeof(int) * (n + m + 1));
-        for(int i = 0; i < n + m; i++)
+        s->var = (int *)malloc(sizeof(int) * (s->n + s->m + 1));
+        for(int i = 0; i < s->n + s->m; i++)
             s->var[i] = i;
     }
 
     int k = 0;
     
-    for(int i = 1; i < m; i++) {
-        if(b[i] < b[k])
+    for(int i = 1; i < s->m; i++) {
+        if(s->b[i] < s->b[k])
             k = i;
     }
     
-    printf("In init: k = %d, b[k] = %lf\n", k, b[k]);
+    printf("In init: k = %d, b[k] = %lf\n", k, s->b[k]);
     print_problem(s);
     return k;
 }
@@ -263,16 +253,16 @@ void copy_s(sx_t *s1, sx_t *s2)
     memcpy(s2->var, s1->var, sizeof(int *) * (s1->n + s1->m + 1));
 }
 
-int initial(sx_t *s, int m,  int n, double **a, double *b, double *c, double *x, float y, int *var)
+int initial(sx_t *s, double *x)
 {
     int i, j, k;
     double w;
     printf("In initial\n");
-    k = init(s, m, n, a, b, c, x, y, var);
+    k = init(s);
 
     printf("Init k: %d, b[k] = %lf\n", k, s->b[k]);
 
-    if(b[k] >= 0)
+    if(s->b[k] >= 0)
     {
         printf("System ok, solving\n");
         return 1;
@@ -282,19 +272,23 @@ int initial(sx_t *s, int m,  int n, double **a, double *b, double *c, double *x,
         printf("System not ok, rewriting\n");
     }
 
-    double *c_copy = (double *)malloc(sizeof(double) * n);
+    float y = s->y;
 
-    memcpy(c_copy, c, sizeof(double *) * n);
+    double *c = (double *)malloc(sizeof(double) * s->n);
+    memcpy(c, s->c, sizeof(double *) * s->n);
 
     printf("Preparing \n");
     prepare(s, k);
-    n = s->n;
+    int n = s->n;
     print_problem(s);
-
-    s->y = xsimplex(m, n, s->a, s->b, s->c, s->x, 0, s->var,1);
+    sx_t s_dup;
+    copy_s(s, &s_dup);
+    s->y = 0;
+    s->y = xsimplex(&s_dup, s_dup.x, 1);
 
     printf("Rewrote system and solved P1 with simplex\n");
     print_problem(s);
+    int m = s->m;
     for(i = 0; i < n + m; i++)
     {
         if(s->var[i] == m + n - 1)
@@ -309,7 +303,6 @@ int initial(sx_t *s, int m,  int n, double **a, double *b, double *c, double *x,
             }
         }
     }
-    print_problem(s);
     
     if(i >= n)
     {
@@ -321,7 +314,6 @@ int initial(sx_t *s, int m,  int n, double **a, double *b, double *c, double *x,
         pivot(s, i-n, j);
         i = j;
     }
-    print_problem(s);
 
     if(i < n - 1)
     {
@@ -331,10 +323,9 @@ int initial(sx_t *s, int m,  int n, double **a, double *b, double *c, double *x,
         }
             
     }
-    print_problem(s);
     
     free(s->c);
-    s->c = c_copy;
+    s->c = c;
     s->y = y;
 
     for(k = n-1; k < n+m-1; k++)
@@ -343,7 +334,6 @@ int initial(sx_t *s, int m,  int n, double **a, double *b, double *c, double *x,
     (s->n)--;
     n = s->n;
 
-    print_problem(s);
     double t[n];
     memset(t, 0, sizeof(double) * n);
     for(k = 0; k < n; k++) {
@@ -374,335 +364,69 @@ int initial(sx_t *s, int m,  int n, double **a, double *b, double *c, double *x,
     return 1;
 }
 
-float xsimplex(int m, int n, double **a, double *b, double *c, double *x, float y, int *var, int h)
+float xsimplex(sx_t *s, double* x, int h)
 {
     printf("In xsimplex, current system: \n");
-    sx_t s;
-    if(!initial(&s, m, n, a, b, c, x, y, var))
+
+    if(!initial(s, x))
     {
-        free(s.var);
+        free(s->var);
         return NAN;
     }
 
-    print_problem(&s);
+    print_problem(s);
     
     int col, row, i;
-    n = s.n, m = s.m;
-    while((col = select_nonbasic(&s)) >= 0)
+    int n = s->n, m = s->m;
+    while((col = select_nonbasic(s)) >= 0)
     {
         row = -1;
 
         for(i = 0; i < m; i++) {
-            if(a[i][col] > EPS && (row < 0 || b[i] / a[i][col] < b[row] / a[row][col]))
+            if(s->a[i][col] > EPS && (row < 0 || s->b[i] / s->a[i][col] < s->b[row] / s->a[row][col]))
                 row = i;
         }
 
         if(row < 0)
         {
-            free(s.var);
+            free(s->var);
             return INFINITY;
         }
-        pivot(&s, row, col);
+        pivot(s, row, col);
         printf("In simplex, performed pivot on row=%d, col=%d\n", row, col);
-        print_problem(&s);
+        print_problem(s);
     }
-    print_problem(&s);
+    print_problem(s);
     if(h == 0)
     {
         
         for(i = 0; i < n; i++) {
-            if(s.var[i] < n)
-                x[s.var[i]] = 0;
+            if(s->var[i] < n)
+                x[s->var[i]] = 0;
         }
         
         for(i = 0; i < m; i++) {
-            if(s.var[n+i] < n)
-                x[s.var[n+i]] = s.b[i];
+            if(s->var[n+i] < n)
+                x[s->var[n+i]] = s->b[i];
         }
         
-        double z = y;
-        for(int i = 0; i < (s.n + s.m); i++)
-            printf("x_%d = %lf ", s.var[i], x[s.var[i]]);
+        for(int i = 0; i < (s->n+1); i++)
+            printf("x_%d = %lf ", s->var[i], x[i]);
         
         printf("\n");
-        free(s.var);
+        free(s->var);
     }
     else
     {
         for(i = 0; i < n; i++)
             x[i] = 0;
         for(i = n; i < n + m; i++)
-            x[i] = s.b[i-n];
+            x[i] = s->b[i-n];
     }
 
     
 
-    return s.y;
-}
-
-float simplex(int m, int n, double **a, double *b, double *c, double *x, float y)
-{
-    xsimplex(m, n, a, b, c, x, y, NULL, 0);
-}
-
-typedef struct Node_t {
-    int m;
-    int n;
-    int k;
-    int h;
-    double xh;
-    double ak;
-    double bk;
-    double *min;
-    double *max;
-    double **a;
-    double *b;
-    double *x;
-    double *c;
-    double z;
-} node_t;
-
-void free_node(node_t p)
-{
-    printf("free_node not implemented, memory will leak\n");
-}
-
-void alloc_node(node_t *p, int m, int n, double **a, double *b, double *c)
-{
-    p->a = (double **)malloc(sizeof(double *) * (m+1));
-
-    for(int i = 0; i < m+1; i++)
-    {
-        p->a[i] = (double *)malloc(sizeof(double) * (n+1));
-    }
-
-    p->b = (double *)malloc(sizeof(double) * (m+1));
-    p->c = (double *)malloc(sizeof(double) * (n+1));
-    p->x = (double *)calloc((m+n+1), sizeof(double));
-    p->min = (double *)calloc(n, sizeof(double));
-    p->max = (double *)calloc(n, sizeof(double));
-}
-
-node_t initial_node (int m, int n, double **a, double *b, double *c, double *x)
-{
-    node_t p;
-    alloc_node(&p, m, n, a, b, c);
-    
-    int i;
-    for(i = 0; i < m+1; i++)
-    {
-        memcpy(p.a[i], a[i], sizeof(double *) * (n + 1));
-    }
-    
-    memcpy(p.b, b, sizeof(double *) * (m+1));
-    memcpy(p.c, c, sizeof(double *) * (m+1));
-
-    for (i = 0; i < n; i = i + 1) {
-        p.min[i] = -INFINITY;
-        p.max[i] = INFINITY;
-    }
-
-    return p;
-}
-
-node_t extend(node_t p, int m, int n, double **a, double *b, double *c, int k, double ak, double bk)
-{
-    node_t q;
-    alloc_node(&q, m, n, a, b, c);
-    int i;
-    
-    q.k = k; q.ak = ak; q.bk = bk;
-
-    if(ak > 0 && p.max[k] < INFINITY)
-        q.m = p.m;
-    else if(ak < 0 && p.min[k] > 0)
-        q.m = p.m;
-    else
-        q.m = p.m + 1;
-
-    q.n = p.n;
-    q.h = -1;
-    q.a = (double **)malloc(sizeof(double *) * (q.m+1));
-
-    for(i = 0; i < m+1; i++)
-    {
-        q.a[i] = (double *)malloc(sizeof(double) * (q.n+1));
-    }
-
-    q.b = (double *)malloc(sizeof(double) * (q.m+1));
-    q.c = (double *)malloc(sizeof(double) * (q.n+1));
-    q.x = (double *)calloc((q.n+1), sizeof(double));
-    q.min = (double *)calloc(n + 1, sizeof(double));
-    q.max = (double *)calloc(n + 1, sizeof(double));
-
-    memcpy(q.min, p.min, sizeof(double) * (n+1));
-    memcpy(q.max, p.max, sizeof(double) * (n+1));
-
-    for(i = 0; i < m; i++)
-    {
-        memcpy(q.a[i], a[i], sizeof(double *) * (q.n + 1));
-    }
-
-    memcpy(q.b, b, sizeof(double) * (m));
-    memcpy(q.c, c, sizeof(double) * (m+1));
-
-    if(ak > 0)
-    {
-        if(q.max[k] == INFINITY || bk < q.max[k])
-            q.max[k] = bk;
-    }
-    else if(q.min[k] == -INFINITY || -bk > q.min[k])
-    {
-        q.min[k] = -bk;
-    }
-    i = m;
-    for(int j = 0; j < n; j++)
-    {
-        if(q.min[j] > -INFINITY)
-        {
-            q.a[i][j] = -i;
-            q.b[i] = -q.min[j];
-            i++;
-        }
-        if(q.max[j] < INFINITY)
-        {
-            q.a[i][j] = 1;
-            q.b[i] = q.max[j];
-            i++;
-        }
-
-    }
-
-    return q;
-}
-
-int is_integer(double *xp)
-{
-    double x = *xp;
-    double r = round(x);
-
-    if(abs(r-x) < EPS)
-    {
-        *xp = r;
-        return 1;
-    }
-    else
-    {
-        return 0;
-    }
-}
-
-int integer(node_t p)
-{
-    for(int i = 0; i < p.n; i++)
-    {
-        if(!is_integer(&p.x[i]))
-            return 0;
-    }
-
-    return 1;
-}
-
-void bound(node_t p, node_t h[10], double *zp, double *x)
-{
-    if(p.z > *zp)
-    {
-        *zp = p.z;
-        // copy each element of p.x to x // save best x
-        // remove and delete all nodes q in h with q.z < p.z
-
-    }
-}
-
-int branch(node_t q, double z)
-{
-    if(q.z < z)
-        return 0;
-    
-    double min, max;
-    for(int h = 0; h < q.n; h++)
-    {
-       if(!is_integer(&q.x[h]))
-       {
-           if(q.min[h] == -INFINITY)
-                min = 0;
-            else
-                min = q.min[h];
-
-            if(floor(q.x[h]) < min || ceil(q.x[h]) > max)
-                continue;
-            
-            q.h = h;
-            q.xh = q.x[h];
-            free(q.a); free(q.b); free(q.c); free(q.x);
-            return 1;
-       }
-    }
-
-    return 0;
-}
-
-void succ(node_t *p, node_t h[10], int m, int n, double **a, double *b, double *c, int k, double ak, double bk, double *zp, double *x)
-{
-    node_t q = extend(*p, m, n, a, b, c, k, ak, bk);
-    if(p == NULL)
-        return;
-    
-    q.z = simplex(q.m, q.n, q.a, q.b, q.c, q.x, 0);
-
-    if(isfinite(q.z))
-    {
-        if(integer(q))
-        {
-            bound(q, h, zp, x);
-        }
-        else if(branch(q, *zp))
-        {
-            h[0] = q;
-            return;
-        }
-    }
-
-    free_node(q);
-}
-
-
-double intopt(int m, int n, double **a, double *b, double *c, double *x)
-{
-    node_t p = initial_node(m, n, a, b, c, x);
-    node_t h[10];
-    int p_ix = 0;
-    h[p_ix] = p;
-    p_ix++;
-
-    double z = -INFINITY;
-    p.z = simplex(p.m, p.n, p.a, p.b, p.c, p.x, 0);
-    if(integer(p) || !isfinite(p.z))
-    {
-        z = p.z;
-        if(integer(p))
-            memcpy(p.x, x, sizeof(double *) * (m+n+1));
-        
-        free_node(p);
-        return z;
-    }
-
-    branch(p, z);
-
-    while(p_ix != 0)
-    {
-        p = h[p_ix];
-        p_ix--;
-
-        succ(&p, h, m, n, a, b, c, p.h, 1, x.h, &z, x);
-        succ(&p, h, m, n, a, b, c, p.h, 1, -x.h, &z, x);
-        free_node(p);
-    }
-
-    if(z == -INFINITY)
-        return NAN;
-    else
-        return z;
+    return s->y;
 }
 
 int main()
@@ -711,13 +435,16 @@ int main()
 
     init_problem(&s);
 
-    //float y = simplex(s.m, s.n, s.a, s.b, s.c, s.x, s.y);
-    double y = intopt(s.m, s.n, s.a, s.b, s.c, s.x);
+    double *x = (double *)malloc(sizeof(double) * (s.n + 1));
+    memcpy(x, s.x, sizeof(double *) * (s.n + 1));
+    
+    float y = xsimplex(&s, x, 0);
+
     //print_problem(&s);
     printf("max is y = %f, in: ", y);
     // printf("\n");
 
 
-    //free_vars(&s);
+    free_vars(&s);
     return 0;
 }
